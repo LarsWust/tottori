@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "195054877306",
+    "project_id": "tottori-28f47",
+    "storage_bucket": "tottori-28f47.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195054877306:android:b678959a93f5b64c6619c3",
+        "android_client_info": {
+          "package_name": "com.example.tottori"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "195054877306-897k2hr29vkpd640caqe3iro87u6k3cd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-mjTxBQ87e6EfIMScxcevufxP11UukMs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "195054877306-897k2hr29vkpd640caqe3iro87u6k3cd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

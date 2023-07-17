@@ -1,85 +1,113 @@
 import 'dart:async';
 
-import 'package:align_positioned/align_positioned.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:tottori/firebase_options.dart';
+import 'package:tottori/pages/SplashScreen.dart';
 
-import 'CustomPageRoute.dart';
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+final ValueNotifier<bool> hidePassword = ValueNotifier(true);
+bool loggedIn = true;
+Color logoColor = const Color(0xfffaa700);
+User user = FirebaseAuth.instance.currentUser!;
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) {
+      //setState(() {
+      hidePassword.value = true;
+      //});
+    }
+    return;
+  }
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        useMaterial3: true,
-        primarySwatch: Colors.blue,
-      ),
-      home: const SplashScreen(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key, required this.title});
-  final String title;
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(milliseconds: 5500), () => Navigator.pushReplacement(context, CustomPageRoute(SecondScreen())));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: AlignPositioned(
-        moveByChildWidth: -((3000 - 2005) / 3000) / 2,
-        child: Stack(
-          children: [
-            //Container(color: Colors.red),
-            Lottie.asset(
-              "assets/tottori_splash_8.json",
-              repeat: false,
+    return ValueListenableBuilder(
+        valueListenable: themeNotifier,
+        builder: (_, mode, __) {
+          return MaterialApp(
+            title: 'Tottori',
+            themeMode: mode,
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xfffaa700),
+                secondary: Colors.deepPurple,
+                brightness: Brightness.dark,
+                background: const Color.fromARGB(255, 32, 32, 48),
+                surface: const Color.fromARGB(255, 56, 56, 83),
+                surfaceTint: const Color.fromARGB(255, 49, 49, 72),
+                surfaceVariant: const Color.fromARGB(255, 78, 78, 118),
+                outline: const Color.fromARGB(255, 125, 125, 177),
+                error: const Color.fromARGB(255, 185, 60, 60),
+              ),
+              //scaffoldBackgroundColor: const Color.fromARGB(255, 32, 32, 48),
+              primaryColorLight: const Color.fromARGB(255, 64, 64, 96),
+              primaryColorDark: const Color.fromARGB(255, 18, 18, 26),
+              cardColor: const Color.fromARGB(255, 53, 53, 79),
+              textTheme: TextTheme(
+                labelLarge: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                labelMedium: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                labelSmall: TextStyle(fontSize: 12, color: Colors.grey[400]),
+              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SecondScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Test")),
-      body: Center(
-          child: Column(
-        children: [
-          Text(
-            "Test",
-            textScaleFactor: 2,
-          ),
-          FilledButton(
-            onPressed: () {},
-            icon: Icon(Icons.abc),
-            label: Text("Test"),
-          ),
-        ],
-      )),
-    );
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xfffaa700),
+                secondary: Colors.deepPurple,
+                brightness: Brightness.light,
+                background: const Color.fromARGB(255, 221, 221, 221),
+                surface: const Color.fromARGB(255, 201, 201, 201),
+                surfaceTint: const Color.fromARGB(255, 233, 233, 233),
+                surfaceVariant: const Color.fromARGB(255, 175, 175, 175),
+                outline: const Color.fromARGB(255, 142, 142, 142),
+                error: const Color.fromARGB(255, 215, 69, 69),
+              ),
+              //scaffoldBackgroundColor: Colors.grey[400],
+              primaryColorLight: const Color.fromARGB(255, 175, 175, 175),
+              primaryColorDark: const Color.fromARGB(255, 20, 20, 20),
+              cardColor: const Color.fromARGB(255, 205, 205, 205),
+              textTheme: TextTheme(
+                labelLarge: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                labelMedium: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                labelSmall: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+            home: const SplashScreen(title: 'Flutter Demo Home Page'),
+          );
+        });
   }
 }
