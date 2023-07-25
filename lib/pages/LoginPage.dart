@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tottori/helpers/account_helpers.dart';
 import 'package:tottori/pages/profile_setup.dart';
 import 'package:tottori/services/auth_service.dart';
 
@@ -69,6 +70,7 @@ class _LoginPageState extends State<LoginPage> {
             email: emailController.text,
             password: passwordController.text,
           );
+          fixAccount();
           setState(() {
             fill = 1;
           });
@@ -397,8 +399,12 @@ class _LoginPageState extends State<LoginPage> {
                                   Radius.circular(10),
                                 ),
                                 splashColor: Theme.of(context).colorScheme.surfaceVariant,
-                                onTap: () {
-                                  AuthService().signInWithGoogle();
+                                onTap: () async {
+                                  await AuthService().signInWithGoogle();
+                                  user = FirebaseAuth.instance.currentUser;
+                                  //user?.reload();
+                                  //fixAccount();
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => const ProfileSetupPage()));
                                 },
                                 child: Ink(
                                   width: 80,

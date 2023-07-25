@@ -26,11 +26,17 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AlignPositioned(
-        moveByChildWidth: -((3000 - 2005) / 3000) / 2,
-        child: Lottie.asset(
-          "lib/assets/tottori_splash_8.json",
-          repeat: false,
+      body: GestureDetector(
+        onTap: () {
+          Navigator.pushReplacement(context, CustomPageRoute(const AuthPage(), context));
+          //Timer(const Duration(milliseconds: 1000), () => super.dispose());
+        },
+        child: AlignPositioned(
+          moveByChildWidth: -((3000 - 2005) / 3000) / 2,
+          child: Lottie.asset(
+            "lib/assets/tottori_splash_8.json",
+            repeat: false,
+          ),
         ),
       ),
     );

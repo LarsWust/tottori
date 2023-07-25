@@ -1,35 +1,28 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tottori/components/expanded_profile.dart';
 
 class ProfilePicture extends StatefulWidget {
   final double height;
   final double width;
-  // final bool edit;
-  // File? updatedImage;
-  late Image image;
+  Image image = Image.asset("lib/assets/default_picture.png");
   final bool expanable;
-  //late Image oldImage;
-  // IconData icon = Icons.edit;
-
-  ProfilePicture.user({super.key, required User user, this.height = 100, this.width = 100, this.expanable = false}) {
-    if (user.photoURL == null) {
-      image = Image.asset("lib/assets/default_picture.png");
-      //oldImage = image;
-    } else {
-      try {
-        image = Image.network(user.photoURL!);
-      } catch (e) {
-        image = Image.asset("lib/assets/default_picture.png");
-      }
-      //oldImage = image;
-    }
-  }
-
   ProfilePicture.image({super.key, required this.image, this.height = 100, this.width = 100, this.expanable = false});
+  ProfilePicture.blank({super.key, this.height = 100, this.width = 100, this.expanable = false});
 
   @override
   State<ProfilePicture> createState() => _ProfilePictureState();
+
+  Widget circleImage(ImageProvider<Object> img) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(image: img, fit: BoxFit.fill),
+        ),
+      ),
+    );
+  }
 }
 
 class _ProfilePictureState extends State<ProfilePicture> {
@@ -37,50 +30,25 @@ class _ProfilePictureState extends State<ProfilePicture> {
   Widget build(BuildContext context) {
     if (widget.expanable) {
       return Hero(
-        tag: "profile",
+        tag: widget.hashCode.toString(),
         child: GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               PageRouteBuilder(
                 opaque: false,
-                pageBuilder: (context, _, __) => ExpandedProfile(image: widget.image),
+                pageBuilder: (context, _, __) => ExpandedProfile(
+                  image: widget.image,
+                  tag: widget.hashCode.toString(),
+                ),
               ),
             );
           },
-          child: SizedBox(
-            width: widget.width,
-            height: widget.height,
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                width: widget.width,
-                height: widget.height,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(image: widget.image.image, fit: BoxFit.fill),
-                ),
-              ),
-            ),
-          ),
+          child: widget.circleImage(widget.image.image),
         ),
       );
     } else {
-      return SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: Container(
-            width: widget.width,
-            height: widget.height,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(image: widget.image.image, fit: BoxFit.fill),
-            ),
-          ),
-        ),
-      );
+      return widget.circleImage(widget.image.image);
     }
   }
 }

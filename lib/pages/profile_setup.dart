@@ -1,15 +1,15 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:image/image.dart' as img;
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/components/profile_picture.dart';
-
+import 'package:tottori/pages/home_page.dart';
 import '../main.dart';
 
 class ProfileSetupPage extends StatefulWidget {
@@ -24,35 +24,43 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   FocusNode usernameFocus = FocusNode();
   ValueNotifier<Image> image = ValueNotifier<Image>(Image.asset("lib/assets/default_picture.png"));
   ValueNotifier<File?> updatedImage = ValueNotifier<File?>(null);
+  RegExp usernameRegExp = RegExp("[0-9a-zA-Z\\._]");
 
   String errorText = "";
-  bool usernameError = false;
   Image? oldImage;
 
   double fill = 0;
   final double _splashSize = 0;
   bool setupEnabled = true;
 
-  final usernameController = TextEditingController(text: user.displayName);
+  bool displayNameError = false;
+  bool usernameError = false;
+
+  final usernameController = TextEditingController(text: "");
+  final displayNameController = TextEditingController(text: user?.displayName);
 
   void setUpAnimation() {}
 
   void setUp() async {
-    //TODO: Add dupe username check
+    //TODO: Refactor w/ TottoriUser class
     setState(() {
       setupEnabled = false;
       errorText = "";
     });
     if (FirebaseAuth.instance.currentUser != null) {
+      print("user is logged in!");
+      TottoriUser currentUser = TottoriUser(FirebaseAuth.instance.currentUser!.uid);
+      String username = usernameController.text.trim();
+      String displayName = displayNameController.text.trim();
       if (updatedImage.value != null) {
         try {
-          img.Image resized = img.copyResize(img.decodeImage(await updatedImage.value!.readAsBytes())!, width: 256);
-          File uploadFile = await updatedImage.value!.writeAsBytes(img.encodeJpg(resized, quality: 50));
-          setState(() => {imageCache.clear(), imageCache.clearLiveImages()});
-          final String pfpPath = 'user-profile-images/${user.uid}.jpg';
-          final ref = FirebaseStorage.instance.ref().child(pfpPath);
-          await ref.putFile(uploadFile);
-          await user.updatePhotoURL(await ref.getDownloadURL());
+          //File uploadFile = await setPfp(updatedImage.value!, 256, 50);
+          //img.Image resized = img.copyResize(img.decodeImage(await updatedImage.value!.readAsBytes())!, width: 256);
+          //File uploadFile = await compressPfp(updatedImage.value!, 256, 50); //await updatedImage.value!.writeAsBytes(img.encodeJpg(resized, quality: 50));
+          //setState(() => {imageCache.clear(), imageCache.clearLiveImages()});
+          //await ref.putFile(uploadFile);
+          //await user?.updatePhotoURL(await ref.getDownloadURL());
+          File uploadFile = await currentUser.setPfp(updatedImage.value!, 256, 50);
           image.value = Image.file(uploadFile);
           oldImage = Image.file(uploadFile);
           updatedImage.value = null;
@@ -62,32 +70,130 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           });
         }
       }
-      if ((usernameController.text != user.displayName)) {
-        if (usernameController.text.trim().length >= 3 && usernameController.text.trim().length <= 48) {
-          print("updating ${user.displayName} to ${usernameController.text.trim()} (${usernameController.text.trim().length})");
 
-          await user.updateDisplayName(usernameController.text.trim());
-          user = FirebaseAuth.instance.currentUser!;
+      if (username.length >= 3 && username.length <= 48) {
+        if (usernameRegExp.hasMatch(username)) {
+          try {
+            // final document = FirebaseFirestore.instance.collection("usernames").doc(username);
+            // await document.get().then((snapshot) async {
+            //   final usernames = FirebaseFirestore.instance.collection("usernames");
+
+            //   if (snapshot.exists && (snapshot.data() as Map<String, dynamic>)["owner"] != user?.uid) {
+            //     setState(() {
+            //       errorText = "Username is already taken!";
+            //       usernameError = true;
+            //       return;
+            //     });
+            //   } else {
+            //     final users = FirebaseFirestore.instance.collection("users");
+            //     await usernames.doc(await users.doc(user?.uid).get().then((value) => (value.data() as Map<String, dynamic>)["username"])).delete();
+            //     await FirebaseFirestore.instance.collection("usernames").doc(username).set({"owner": user?.uid});
+            //     await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({"username": username}, SetOptions(merge: true));
+            //     user = FirebaseAuth.instance.currentUser!;
+            currentUser.setUsername(username);
+            setState(() {
+              usernameError = false;
+            });
+            //}
+            //}
+            //);
+          } catch (e) {
+            setState(() {
+              errorText = "Failed to update username ($e)";
+              usernameError = true;
+              return;
+            });
+          }
         } else {
-          errorText = "Username must be between 3-48 characters!";
+          setState(() {
+            errorText = "Username can only contain characters A-Z _ and .";
+            usernameError = true;
+            return;
+          });
         }
+      } else {
+        setState(() {
+          errorText = "Username must be between 3-48 characters!";
+          usernameError = true;
+          return;
+        });
       }
+      if (displayName.length >= 3 && displayName.length <= 48) {
+        try {
+          currentUser.setDisplayName(displayName);
+          // await user?.updateDisplayName(displayName);
+          // await FirebaseFirestore.instance.collection("users").doc(user?.uid).set({"displayName": displayName}, SetOptions(merge: true));
+          // user = FirebaseAuth.instance.currentUser!;
+          setState(() {
+            displayNameError = false;
+          });
+        } catch (e) {
+          setState(() {
+            errorText = "Failed to update display name ($e)";
+            displayNameError = true;
+            return;
+          });
+        }
+      } else {
+        setState(() {
+          errorText = "Display name must be between 3-48 characters!";
+          displayNameError = true;
+          return;
+        });
+      }
+    } else {
+      setState(() {
+        errorText = "User not logged in!";
+        return;
+      });
     }
+
     setState(() {
       setupEnabled = true;
+      displayNameError = false;
+      usernameError = false;
     });
+    if (errorText.isEmpty) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage()));
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    if (user.photoURL == null) {
+    if (user?.photoURL == null) {
       image.value = Image.asset("lib/assets/default_picture.png");
       oldImage = Image.asset("lib/assets/default_picture.png");
     } else {
-      image.value = Image.network(user.photoURL!);
-      oldImage = Image.network(user.photoURL!);
+      image.value = Image.network(user!.photoURL!);
+      oldImage = Image.network(user!.photoURL!);
     }
+    setUsernameController();
+    setDisplaynameController();
+  }
+
+  void setUsernameController() async {
+    String text = "";
+    await FirebaseFirestore.instance.collection("users").doc(user?.uid).get().then((value) {
+      if (value.exists && value.data() != null) {
+        text = (value.data() as Map<String, dynamic>)["username"] ?? "";
+      }
+      setState(() {
+        usernameController.text = text;
+      });
+    });
+  }
+
+  void setDisplaynameController() async {
+    String text = "";
+    await FirebaseFirestore.instance.collection("users").doc(user?.uid).get().then((value) {
+      if (value.exists && value.data() != null) {
+        text = (value.data() as Map<String, dynamic>)["displayName"] ?? "";
+      }
+      setState(() {
+        displayNameController.text = text;
+      });
+    });
   }
 
   @override
@@ -240,15 +346,45 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                                     ),
                                   ),
                                   TextField(
+                                    controller: displayNameController,
+                                    maxLines: 1,
+                                    maxLength: 48,
+                                    minLines: 1,
+                                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                                    decoration: InputDecoration(
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: displayNameError ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
+                                          width: displayNameError ? 3 : 1,
+                                        ),
+                                      ),
+                                      hintText: "Display Name",
+                                    ),
+                                  ),
+                                  TextField(
                                     controller: usernameController,
                                     maxLines: 1,
                                     maxLength: 48,
                                     minLines: 1,
                                     maxLengthEnforcement: MaxLengthEnforcement.enforced,
                                     autocorrect: false,
-                                    decoration: const InputDecoration(hintText: "Username"),
+                                    inputFormatters: <TextInputFormatter>[
+                                      FilteringTextInputFormatter.allow(usernameRegExp),
+                                    ], // Only numbers can be entered
+                                    decoration: InputDecoration(
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: usernameError ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
+                                          width: usernameError ? 3 : 1,
+                                        ),
+                                      ),
+                                      hintText: "Username",
+                                      isDense: true,
+                                      prefixIcon: const Text("@"),
+                                      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                                    ),
                                   ),
-                                  Text(user.email!),
+                                  Text(user?.email ?? "Error: No email"),
                                 ],
                               ),
                             ),

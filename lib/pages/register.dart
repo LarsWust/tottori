@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:tottori/pages/home_page.dart';
+import 'package:tottori/helpers/account_helpers.dart';
+import 'package:tottori/pages/profile_setup.dart';
 import 'package:tottori/services/auth_service.dart';
 
 import '../main.dart';
@@ -82,6 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
             email: emailController.text,
             password: passwordController.text,
           );
+          fixAccount();
           setState(() {
             fill = 1;
           });
@@ -108,7 +110,8 @@ class _RegisterPageState extends State<RegisterPage> {
             user = FirebaseAuth.instance.currentUser!;
           });
           // ignore: use_build_context_synchronously
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => const HomePage()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => const ProfileSetupPage()));
+
           loggedIn = true;
         } on FirebaseAuthException catch (e) {
           if (e.code == 'email-already-in-use') {
@@ -318,8 +321,6 @@ class _RegisterPageState extends State<RegisterPage> {
                             },
                             onEditingComplete: () {
                               FocusScope.of(context).unfocus();
-                              print("joe");
-                              print(passwordController.text != confirmController.text);
                               if (passwordController.text != confirmController.text) {
                                 setState(() {
                                   confirmError = true;
@@ -444,6 +445,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 splashColor: Theme.of(context).colorScheme.surfaceVariant,
                                 onTap: () {
                                   AuthService().signInWithGoogle();
+                                  user?.reload();
+                                  fixAccount();
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => const ProfileSetupPage()));
                                 },
                                 child: Ink(
                                   width: 80,

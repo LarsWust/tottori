@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:tottori/components/profile_picture.dart';
-import 'package:tottori/main.dart';
-import 'package:tottori/pages/profile_setup.dart';
+import 'package:tottori/classes/tottori_user.dart';
+import 'package:tottori/classes/tottori_user_data.dart';
+import 'package:tottori/components/profile_card.dart';
 
 class Profile extends StatefulWidget {
-  const Profile({super.key});
+  final String uuid;
+  final bool appbar;
+  final TottoriUserData? data;
+  const Profile({super.key, required this.uuid, this.appbar = false, this.data});
 
   @override
   State<Profile> createState() => _ProfileState();
@@ -13,31 +16,36 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Builder(builder: (context) {
-              if (user.photoURL == null) {
-                return const Icon(Icons.disabled_by_default);
-              } else {
-                return ProfilePicture.user(
-                  user: user,
-                  width: 100,
-                  height: 100,
-                  expanable: true,
-                );
-              }
-            }),
-            Text("${user.email}"),
-          ],
+    if (widget.appbar) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Profile")),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileCard(
+                  TottoriUser(widget.uuid),
+                  data: widget.data,
+                ),
+              ),
+            ],
+          ),
         ),
-        TextButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileSetupPage()));
-            },
-            child: const Text("Setup"))
-      ],
-    );
+      );
+    } else {
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileCard(TottoriUser(widget.uuid)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }

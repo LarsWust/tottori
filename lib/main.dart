@@ -10,7 +10,8 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 final ValueNotifier<bool> hidePassword = ValueNotifier(true);
 bool loggedIn = true;
 Color logoColor = const Color(0xfffaa700);
-User user = FirebaseAuth.instance.currentUser!;
+User? user = FirebaseAuth.instance.currentUser!;
+final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 surfaceTint: const Color.fromARGB(255, 49, 49, 72),
                 surfaceVariant: const Color.fromARGB(255, 78, 78, 118),
                 outline: const Color.fromARGB(255, 125, 125, 177),
+                onBackground: const Color.fromARGB(255, 185, 185, 231),
                 error: const Color.fromARGB(255, 185, 60, 60),
               ),
               //scaffoldBackgroundColor: const Color.fromARGB(255, 32, 32, 48),
@@ -81,6 +83,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 labelLarge: TextStyle(fontSize: 16, color: Colors.grey[400]),
                 labelMedium: TextStyle(fontSize: 14, color: Colors.grey[400]),
                 labelSmall: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                headlineLarge: TextStyle(fontSize: 32, color: Colors.grey[200], fontWeight: FontWeight.bold),
+                headlineMedium: TextStyle(fontSize: 28, color: Colors.grey[200], fontWeight: FontWeight.bold),
+                headlineSmall: TextStyle(fontSize: 24, color: Colors.grey[200], fontWeight: FontWeight.bold),
+                bodyLarge: TextStyle(fontSize: 18, color: Colors.grey[200]),
+                bodyMedium: TextStyle(fontSize: 16, color: Colors.grey[200]),
+                bodySmall: TextStyle(fontSize: 14, color: Colors.grey[200]),
               ),
             ),
             theme: ThemeData(
@@ -104,6 +112,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 labelLarge: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 labelMedium: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 labelSmall: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                headlineLarge: TextStyle(fontSize: 32, color: Colors.grey[800], fontWeight: FontWeight.bold),
+                headlineMedium: TextStyle(fontSize: 28, color: Colors.grey[800], fontWeight: FontWeight.bold),
+                headlineSmall: TextStyle(fontSize: 24, color: Colors.grey[800], fontWeight: FontWeight.bold),
+                bodyLarge: TextStyle(fontSize: 18, color: Colors.grey[800]),
+                bodyMedium: TextStyle(fontSize: 16, color: Colors.grey[800]),
+                bodySmall: TextStyle(fontSize: 14, color: Colors.grey[800]),
               ),
             ),
             home: const SplashScreen(title: 'Flutter Demo Home Page'),
