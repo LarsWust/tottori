@@ -45,13 +45,17 @@ class _TottoriUserListState extends State<TottoriUserList> {
                                     width: 8,
                                   ),
                                   GestureDetector(
-                                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (context) => Profile(
-                                        uuid: widget.users[index].uuid,
-                                        appbar: true,
-                                        data: snapshot.data!,
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => Scaffold(
+                                          appBar: AppBar(title: const Text("Profile")),
+                                          body: Profile(
+                                            uuid: widget.users[index].uuid,
+                                            data: snapshot.data!,
+                                          ),
+                                        ),
                                       ),
-                                    )),
+                                    ),
                                     behavior: HitTestBehavior.translucent,
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.start,

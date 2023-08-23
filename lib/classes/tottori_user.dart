@@ -4,7 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tottori/classes/tottori_queue.dart';
+import 'package:tottori/classes/tottori_queue_data.dart';
 import 'package:tottori/classes/tottori_track.dart';
+import 'package:tottori/classes/tottori_track_data.dart';
 import 'package:tottori/classes/tottori_user_data.dart';
 import 'package:tottori/helpers/account_helpers.dart';
 import 'package:uuid/uuid.dart';
@@ -14,20 +17,124 @@ class TottoriUser {
   late final String uuid;
   late final DocumentReference<Map<String, dynamic>> userDoc = FirebaseFirestore.instance.collection("users").doc(uuid);
   static final RegExp usernameRegExp = RegExp("[0-9a-zA-Z\\._]");
-  final Map<String, dynamic> defaultData = {
+  final Map<String, dynamic> userDefaultData = {
     "username": "tottori.user",
     "displayName": "Tottori User",
     "lowerCaseUsername": "tottori.user",
     "lowerCaseDisplayName": "tottori user",
     "pfp": Image.asset("lib/assets/default_picture.png"),
     "created": Timestamp.fromMillisecondsSinceEpoch(0),
-    "followers": [],
-    "following": [],
-    "ownedTracks": [],
+    "followers": [].cast<String>(),
+    "following": [].cast<String>(),
+    "ownedTracks": [].cast<String>(),
+    "likedTracks": [].cast<String>(),
+    "ownedQueues": [].cast<String>(),
+    "likedQueues": [].cast<String>(),
   };
+
+  static final TottoriUserData defaultData = TottoriUserData(
+    displayName: "Tottori User",
+    username: "tottori.user",
+    pfp: Image.asset("lib/assets/default_picture.png"),
+    created: Timestamp.fromMillisecondsSinceEpoch(0),
+    ownedTracks: [].cast<TottoriTrack>(),
+    likedTracks: [].cast<TottoriTrack>(),
+    followers: [].cast<TottoriUser>(),
+    following: [].cast<TottoriUser>(),
+    likedQueues: [].cast<TottoriQueue>(),
+    ownedQueues: [].cast<TottoriQueue>(),
+  );
 
   TottoriUser(String uuid) {
     this.uuid = uuid.trim();
+  }
+
+  Future<void> likeTrack(TottoriTrack track) async {
+    await track.addLike(this);
+  }
+
+  Future<void> unlikeTrack(TottoriTrack track) async {
+    await track.removeLike(this);
+  }
+
+  Future<MapEntry<TottoriUserData, Map<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>>>> trackFeed(int start, int end) async {
+    TottoriUserData snapshot = await data;
+    Map<MapEntry<TottoriUser, TottoriUserData>, Map<TottoriTrack, TottoriTrackData?>> discoveredTracks = {};
+    Map<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>> tracks = {};
+
+    for (TottoriUser user in snapshot.following) {
+      TottoriUserData userData = await user.data;
+      if (userData.ownedTracks.isNotEmpty) {
+        discoveredTracks.addAll({
+          MapEntry(user, userData): {for (var element in userData.ownedTracks) element: null}
+        });
+      }
+    }
+
+    //go through every following to get latest track
+    //take latest, find next latest from user, repeat
+
+    int timeout = end + 10;
+    while (tracks.length < end && timeout > 0) {
+      timeout--;
+
+      if (discoveredTracks.isEmpty) {
+        break;
+      }
+      Timestamp latestTimestamp = Timestamp.fromMillisecondsSinceEpoch(0);
+
+      MapEntry<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>>? lastTrackEntry;
+      for (MapEntry<MapEntry<TottoriUser, TottoriUserData>, Map<TottoriTrack, TottoriTrackData?>> discoveredTrackEntry in discoveredTracks.entries) {
+        Map<TottoriTrack, TottoriTrackData?> trackEntries = discoveredTrackEntry.value;
+        if (trackEntries.isNotEmpty) {
+          MapEntry<TottoriTrack, TottoriTrackData?> trackEntry = trackEntries.entries.last;
+          if (trackEntry.value == null) {
+            TottoriTrackData trackData = await trackEntry.key.data;
+            discoveredTracks[discoveredTrackEntry.key]![trackEntry.key] = trackData;
+            trackEntry = MapEntry(trackEntry.key, trackData);
+          }
+          if (trackEntry.value != null && trackEntry.value!.created.millisecondsSinceEpoch > latestTimestamp.millisecondsSinceEpoch) {
+            latestTimestamp = trackEntry.value!.created;
+            lastTrackEntry = MapEntry(MapEntry(discoveredTrackEntry.key.key, discoveredTrackEntry.key.value), MapEntry(trackEntry.key, trackEntry.value!));
+          }
+        } else {
+          discoveredTracks.removeWhere((key, value) => (value.isEmpty));
+        }
+      }
+      if (lastTrackEntry != null) {
+        tracks.addEntries([lastTrackEntry]);
+        discoveredTracks.forEach((key, value) {
+          if (key.key.uuid == lastTrackEntry!.key.key.uuid) {
+            value.remove(lastTrackEntry.value.key);
+          }
+        });
+      }
+      discoveredTracks.removeWhere((key, value) => (value.isEmpty));
+    }
+    return MapEntry(snapshot, tracks);
+  }
+
+  Stream<TottoriUserData> get dataStream {
+    return userDoc.snapshots().asyncMap((event) async {
+      Map<String, dynamic> userData = userDefaultData;
+      if (event.exists && event.data() != null) {
+        userData = event.data()!;
+      }
+      String pfpPath = 'user-profile-images/$uuid.jpg';
+      final ref = FirebaseStorage.instance.ref().child(pfpPath);
+      return TottoriUserData(
+        displayName: userData["displayName"] ?? userDefaultData["displayName"],
+        username: userData["username"] ?? userDefaultData["username"],
+        pfp: await ref.getDownloadURL().then((uri) => Image.network(uri)).onError((error, stackTrace) => userDefaultData["pfp"]),
+        created: userData["created"] ?? userDefaultData["created"],
+        ownedTracks: (userData["ownedTracks"] ?? userDefaultData["ownedTracks"]).map((e) => TottoriTrack(e.toString())).toList().cast<TottoriTrack>(),
+        likedTracks: (userData["likedTracks"] ?? userDefaultData["likedTracks"]).map((e) => TottoriTrack(e.toString())).toList().cast<TottoriTrack>(),
+        likedQueues: (userData["likedQueues"] ?? userDefaultData["likedQueues"]).map((e) => TottoriQueue(e.toString())).toList().cast<TottoriQueue>(),
+        ownedQueues: (userData["ownedQueues"] ?? userDefaultData["ownedQueues"]).map((e) => TottoriQueue(e.toString())).toList().cast<TottoriQueue>(),
+        followers: (userData["followers"] ?? userDefaultData["followers"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
+        following: (userData["following"] ?? userDefaultData["following"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
+      );
+    });
   }
 
   Future<TottoriUserData> get data async {
@@ -35,25 +142,28 @@ class TottoriUser {
       if (value.exists && value.data() != null) {
         return (value.data() as Map<String, dynamic>);
       } else {
-        return defaultData;
+        return userDefaultData;
       }
     });
     String pfpPath = 'user-profile-images/$uuid.jpg';
     final ref = FirebaseStorage.instance.ref().child(pfpPath);
 
     return TottoriUserData(
-      displayName: userData["displayName"] ?? defaultData["displayName"],
-      username: userData["username"] ?? defaultData["username"],
-      pfp: await ref.getDownloadURL().then((uri) => Image.network(uri)).onError((error, stackTrace) => defaultData["pfp"]),
-      created: userData["created"] ?? defaultData["created"],
-      ownedTracks: (userData["ownedTracks"] ?? defaultData["ownedTracks"]).map((e) => TottoriTrack(e.toString())).toList().cast<TottoriTrack>(),
-      followers: (userData["followers"] ?? defaultData["followers"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
-      following: (userData["following"] ?? defaultData["following"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
+      displayName: userData["displayName"] ?? userDefaultData["displayName"],
+      username: userData["username"] ?? userDefaultData["username"],
+      pfp: await ref.getDownloadURL().then((uri) => Image.network(uri)).onError((error, stackTrace) => userDefaultData["pfp"]),
+      created: userData["created"] ?? userDefaultData["created"],
+      ownedTracks: (userData["ownedTracks"] ?? userDefaultData["ownedTracks"]).map((e) => TottoriTrack(e.toString())).toList().cast<TottoriTrack>(),
+      likedTracks: (userData["likedTracks"] ?? userDefaultData["likedTracks"]).map((e) => TottoriTrack(e.toString())).toList().cast<TottoriTrack>(),
+      likedQueues: (userData["likedQueues"] ?? userDefaultData["likedQueues"]).map((e) => TottoriQueue(e.toString())).toList().cast<TottoriQueue>(),
+      ownedQueues: (userData["ownedQueues"] ?? userDefaultData["ownedQueues"]).map((e) => TottoriQueue(e.toString())).toList().cast<TottoriQueue>(),
+      followers: (userData["followers"] ?? userDefaultData["followers"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
+      following: (userData["following"] ?? userDefaultData["following"]).map((e) => TottoriUser(e.toString())).toList().cast<TottoriUser>(),
     );
   }
 
   Future<bool> get isValid async {
-    List<String> validKeys = defaultData.keys.toList();
+    List<String> validKeys = userDefaultData.keys.toList();
     Map<String, dynamic>? userData = await userDoc.get().then((value) {
       if (value.exists && value.data() != null) {
         return (value.data() as Map<String, dynamic>);
@@ -67,17 +177,11 @@ class TottoriUser {
     return (validKeys.isEmpty);
   }
 
-  Future<String?> get pfp async {
+  Future<Image> get pfp async {
     final String pfpPath = 'user-profile-images/$uuid.jpg';
     final ref = FirebaseStorage.instance.ref().child(pfpPath);
-    print("HELLO");
-    print(await ref.getDownloadURL().then((value) => value).onError((error, stackTrace) {
-      print("bad");
-      return FirebaseStorage.instance.ref().child(defaultData["pfp"]).getDownloadURL();
-    }));
-    return await ref.getDownloadURL().then((value) => value).onError((error, stackTrace) {
-      print("bad");
-      return FirebaseStorage.instance.ref().child(defaultData["pfp"]).getDownloadURL();
+    return await ref.getDownloadURL().then((value) => Image.network(value)).onError((error, stackTrace) {
+      return Image.asset("lib/assets/default_picture.png");
     });
   }
 
@@ -90,6 +194,16 @@ class TottoriUser {
   //     }
   //   });
   // }
+
+  Future<void> setTimestamp(Timestamp timestamp) async {
+    userDoc.set({"created": timestamp}, SetOptions(merge: true));
+  }
+
+  Future<void> initTimestamp() async {
+    if (await userDoc.get().then((value) => !(value.data() as Map<String, dynamic>).containsKey("created"))) {
+      setTimestamp(Timestamp.now());
+    }
+  }
 
   Future<void> setUsername(String username) async {
     username = username.trim();
@@ -131,14 +245,14 @@ class TottoriUser {
   Future<File> setPfp(File image, int size, int quality) async {
     final String pfpPath = 'user-profile-images/$uuid.jpg';
     final ref = FirebaseStorage.instance.ref().child(pfpPath);
-    File uploadFile = await compressPfp(image, 256, 50);
+    File uploadFile = await compressPfp(image, size, quality);
     await ref.putFile(uploadFile);
     return uploadFile;
   }
 
   Future<File> setPfpFromUrl(String url, int size, int quality) async {
     Directory tempDir = await getTemporaryDirectory();
-    return await setPfp(await http.get(Uri.parse(url)).then((response) => File("${tempDir.path}${const Uuid().v4()}.jpg").writeAsBytes(response.bodyBytes)), 256, 50);
+    return await setPfp(await http.get(Uri.parse(url)).then((response) => File("${tempDir.path}${const Uuid().v4()}.jpg").writeAsBytes(response.bodyBytes)), 256, 80);
   }
 
   Future<void> followUser(TottoriUser user) async {
@@ -156,6 +270,30 @@ class TottoriUser {
     }, SetOptions(merge: true));
     await FirebaseFirestore.instance.collection("users").doc(user.uuid).set({
       "followers": FieldValue.arrayRemove([uuid])
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> addTrack(TottoriTrackData trackData) async {
+    await userDoc.set({
+      "ownedTracks": FieldValue.arrayUnion([trackData.tot])
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> removeTrack(TottoriTrackData trackData) async {
+    await userDoc.set({
+      "ownedTracks": FieldValue.arrayRemove([trackData.tot])
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> addQueue(TottoriQueueData queueData) async {
+    await userDoc.set({
+      "ownedTracks": FieldValue.arrayRemove([queueData.uid])
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> removeQueue(TottoriQueueData queueData) async {
+    await userDoc.set({
+      "ownedTracks": FieldValue.arrayRemove([queueData.uid])
     }, SetOptions(merge: true));
   }
 }

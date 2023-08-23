@@ -52,6 +52,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       TottoriUser currentUser = TottoriUser(FirebaseAuth.instance.currentUser!.uid);
       String username = usernameController.text.trim();
       String displayName = displayNameController.text.trim();
+      currentUser.initTimestamp();
       if (updatedImage.value != null) {
         try {
           //File uploadFile = await setPfp(updatedImage.value!, 256, 50);
@@ -60,7 +61,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           //setState(() => {imageCache.clear(), imageCache.clearLiveImages()});
           //await ref.putFile(uploadFile);
           //await user?.updatePhotoURL(await ref.getDownloadURL());
-          File uploadFile = await currentUser.setPfp(updatedImage.value!, 256, 50);
+          File uploadFile = await currentUser.setPfp(updatedImage.value!, 512, 80);
           image.value = Image.file(uploadFile);
           oldImage = Image.file(uploadFile);
           updatedImage.value = null;
@@ -161,15 +162,15 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   void initState() {
     super.initState();
-    if (user?.photoURL == null) {
-      image.value = Image.asset("lib/assets/default_picture.png");
-      oldImage = Image.asset("lib/assets/default_picture.png");
-    } else {
-      image.value = Image.network(user!.photoURL!);
-      oldImage = Image.network(user!.photoURL!);
-    }
+    setProfileImage();
     setUsernameController();
     setDisplaynameController();
+  }
+
+  void setProfileImage() async {
+    Image imageDownload = await TottoriUser(user!.uid).pfp;
+    image.value = imageDownload;
+    oldImage = imageDownload;
   }
 
   void setUsernameController() async {
@@ -313,10 +314,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                                               ValueListenableBuilder(
                                                   valueListenable: image,
                                                   builder: (context, Image img, child) {
-                                                    return ProfilePicture.image(
-                                                      image: img,
+                                                    return SizedBox(
                                                       width: 150,
                                                       height: 150,
+                                                      child: ProfilePicture.image(image: img),
                                                     );
                                                   }),
                                               Center(

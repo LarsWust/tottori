@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/main.dart';
 import 'package:tottori/pages/home_page.dart';
-import 'package:tottori/pages/profile_setup.dart';
 import 'package:tottori/pages/sign_up_or_in.dart';
 
 class AuthPage extends StatefulWidget {
@@ -23,6 +23,10 @@ class _AuthPageState extends State<AuthPage> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             user = snapshot.data!;
+            currentUserDataStream = TottoriUser(user!.uid).dataStream;
+            currentUserDataStream.listen((event) {
+              currentUserData = event;
+            });
             DocumentReference doc = FirebaseFirestore.instance.collection("users").doc(user?.uid);
             final username = doc.get().then((value) {
               if (value.exists && value.data() != null) {
@@ -39,11 +43,7 @@ class _AuthPageState extends State<AuthPage> {
             if (loggedIn == false) {
               return const AuthToggle();
             } else {
-              if (user?.displayName != null) {
-                return const HomePage();
-              } else {
-                return const ProfileSetupPage();
-              }
+              return const HomePage();
             }
           } else {
             return const AuthToggle();

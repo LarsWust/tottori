@@ -5,7 +5,7 @@ import 'package:tottori/components/profile_picture.dart';
 
 class ExpandedProfile extends StatefulWidget {
   final Image image;
-  final String tag;
+  final int tag;
 
   const ExpandedProfile({super.key, required this.image, required this.tag});
 
@@ -27,10 +27,12 @@ class _ExpandedProfileState extends State<ExpandedProfile> {
             child: Center(
           child: Hero(
               tag: widget.tag,
-              child: ProfilePicture.image(
-                image: widget.image,
-                width: MediaQuery.of(context).size.shortestSide / 2,
-                height: MediaQuery.of(context).size.shortestSide / 2,
+              child: SizedBox(
+                width: MediaQuery.of(context).size.shortestSide / 1.5,
+                height: MediaQuery.of(context).size.shortestSide / 1.5,
+                child: ProfilePicture.image(
+                  image: widget.image,
+                ),
               )),
         )),
       ),

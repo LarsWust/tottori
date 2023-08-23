@@ -17,7 +17,14 @@ Stream<List<QuerySnapshot<Map<String, dynamic>>>> search(String input, {String? 
           .orderBy("lowerCaseDisplayName")
           .limit(50)
           .snapshots()
-      : FirebaseFirestore.instance.collection("users").limit(50).snapshots();
+      : FirebaseFirestore.instance.collection("tracks").limit(50).snapshots();
+  //TODO: Implement
+  // Stream<QuerySnapshot<Map<String, dynamic>>> trackStream = (input != "")
+  //     ? FirebaseFirestore.instance.collection("tracks").where("lowerCaseTitle", isGreaterThanOrEqualTo: inputUsername).where("lowerCaseTitle", isLessThanOrEqualTo: "$inputUsername\uf8ff").orderBy("lowerCaseTitle").limit(50).snapshots()
+  //     : FirebaseFirestore.instance.collection("tracks").limit(50).snapshots();
+  // Stream<QuerySnapshot<Map<String, dynamic>>> queueStream = (input != "")
+  //     ? FirebaseFirestore.instance.collection("queues").where("lowerCaseTitle", isGreaterThanOrEqualTo: inputUsername).where("lowerCaseTitle", isLessThanOrEqualTo: "$inputUsername\uf8ff").orderBy("lowerCaseTitle").limit(50).snapshots()
+  //     : FirebaseFirestore.instance.collection("queues").limit(50).snapshots();
   return StreamZip([
     displayNameStream,
     usernameStream,

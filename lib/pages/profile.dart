@@ -22,29 +22,17 @@ class _ProfileState extends State<Profile> {
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ProfileCard(
-                  TottoriUser(widget.uuid),
-                  data: widget.data,
-                ),
+              ProfileCard(
+                TottoriUser(widget.uuid),
+                data: widget.data,
               ),
             ],
           ),
         ),
       );
     } else {
-      return Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ProfileCard(TottoriUser(widget.uuid)),
-              ),
-            ],
-          ),
-        ),
+      return SafeArea(
+        child: ProfileCard(TottoriUser(widget.uuid)),
       );
     }
   }

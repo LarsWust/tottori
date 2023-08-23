@@ -6,7 +6,7 @@ import 'package:tottori/main.dart';
 import 'package:image/image.dart' as img;
 
 Future<File> compressPfp(File image, int width, int quality) async {
-  img.Image resized = img.copyResize(img.decodeImage(await image.readAsBytes())!, width: quality, height: quality);
+  img.Image resized = img.copyResize(img.decodeImage(await image.readAsBytes())!, width: width, height: width);
   return await image.writeAsBytes(img.encodeJpg(resized, quality: quality));
 }
 
