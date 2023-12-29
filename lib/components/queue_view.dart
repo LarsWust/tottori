@@ -725,7 +725,8 @@ class _QueueViewState extends State<QueueView> {
                                                                             icon: (isSelected == true) ? Icons.check : Icons.add,
                                                                             onTap: () {
                                                                               (isSelected == true)
-                                                                                  ? selectedNotifier.value.removeWhere((element) => (element.runtimeType == TottoriTrackData) ? (element as TottoriTrackData).tot == trackData.data!.tot : false)
+                                                                                  ? selectedNotifier.value
+                                                                                      .removeWhere((element) => (element.runtimeType == TottoriTrackData) ? (element as TottoriTrackData).tot == trackData.data!.tot : false)
                                                                                   : selectedNotifier.value.add(trackData.data);
                                                                               // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
                                                                               selectedNotifier.notifyListeners();
@@ -974,7 +975,8 @@ class _QueueViewState extends State<QueueView> {
                                                                             icon: (isSelected == true) ? Icons.check : Icons.add,
                                                                             onTap: () {
                                                                               (isSelected == true)
-                                                                                  ? selectedNotifier.value.removeWhere((element) => (element.runtimeType == TottoriQueueData) ? (element as TottoriQueueData).uid == queueData.data!.uid : false)
+                                                                                  ? selectedNotifier.value
+                                                                                      .removeWhere((element) => (element.runtimeType == TottoriQueueData) ? (element as TottoriQueueData).uid == queueData.data!.uid : false)
                                                                                   : selectedNotifier.value.add(queueData.data);
                                                                               // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
                                                                               selectedNotifier.notifyListeners();
@@ -1094,7 +1096,8 @@ class _QueueViewState extends State<QueueView> {
                                                                             icon: (isSelected == true) ? Icons.check : Icons.add,
                                                                             onTap: () {
                                                                               (isSelected == true)
-                                                                                  ? selectedNotifier.value.removeWhere((element) => (element.runtimeType == TottoriQueueData) ? (element as TottoriQueueData).uid == selectQueueData.data?.uid : false)
+                                                                                  ? selectedNotifier.value
+                                                                                      .removeWhere((element) => (element.runtimeType == TottoriQueueData) ? (element as TottoriQueueData).uid == selectQueueData.data?.uid : false)
                                                                                   : selectedNotifier.value.add(selectQueueData.data);
                                                                               // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
                                                                               selectedNotifier.notifyListeners();
@@ -1383,7 +1386,9 @@ Future<TottoriQueueData> reorderQueueList(BuildContext context, {required Tottor
                                             SizedBox(
                                               width: 60,
                                               height: 60,
-                                              child: children[i].runtimeType == TottoriTrackData ? (children[i] as TottoriTrackData).svgPicture(context, expandable: true) : (children[i] as TottoriQueueData).getCoverImage(context, expandable: true),
+                                              child: children[i].runtimeType == TottoriTrackData
+                                                  ? (children[i] as TottoriTrackData).svgPicture(context, expandable: true)
+                                                  : (children[i] as TottoriQueueData).getCoverImage(context, expandable: true),
                                             ),
                                             const SizedBox(
                                               width: 16,

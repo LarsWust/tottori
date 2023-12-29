@@ -99,7 +99,7 @@ class _UploadPageState extends State<UploadPage> {
                             String svgStart = """<svg version="1.1"
          width="1" height="1"
          xmlns="http://www.w3.org/2000/svg">
-         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="red"/>
+         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="black"/>
         <polyline points=\"""";
                             String svgEnd = """"
         style="fill:none;stroke:black;stroke-width:.0025"/>
@@ -200,7 +200,7 @@ class _UploadPageState extends State<UploadPage> {
                             String svgStart = """<svg version="1.1"
          width="1" height="1"
          xmlns="http://www.w3.org/2000/svg">
-         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="red"/>
+         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="black"/>
         <polyline points=\"""";
                             String svgEnd = """"
         style="fill:none;stroke:black;stroke-width:.0025"/>

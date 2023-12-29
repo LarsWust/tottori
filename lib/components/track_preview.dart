@@ -9,7 +9,7 @@ import 'package:tottori/main.dart';
 class TrackPreview extends StatefulWidget {
   final TottoriTrack track;
   final TottoriUserData? currentUser;
-  bool expandable = false;
+  final bool expandable;
   final TottoriUser? whoLiked;
   TrackPreview({super.key, required this.track, this.expandable = false, this.currentUser, this.whoLiked});
 

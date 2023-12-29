@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tottori/main.dart';
 import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/components/track_feed_card.dart';
-import 'package:tottori/main.dart';
 import 'package:tottori/pages/home_page.dart';
 
 class Explore extends StatefulWidget {
@@ -14,11 +14,11 @@ class Explore extends StatefulWidget {
 class _ExploreState extends State<Explore> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: TottoriUser(user!.uid).trackFeed(0, 30),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.data!.value.isEmpty) {
+    return ValueListenableBuilder(
+        valueListenable: currentFeedListenable,
+        builder: (snapshot, currentFeed, _) {
+          if (currentFeed != null) {
+            if (currentFeed.value.isEmpty) {
               return SafeArea(
                 child: Center(
                   child: Column(
@@ -28,21 +28,20 @@ class _ExploreState extends State<Explore> {
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
-                            selectedPage = 2;
+                            selectedPage = 1;
                           });
                         },
                         icon: const Icon(
                           Icons.search,
                         ),
-                        label: const Text("Go find designers!"),
+                        label: const Text("Go find designs!"),
                       ),
                     ],
                   ),
                 ),
               );
             } else {
-              var snapshotValue = snapshot.data!.value;
-
+              var snapshotValue = currentFeed.value;
               return ListView.builder(
                 shrinkWrap: true,
                 itemCount: snapshotValue.length,
@@ -62,7 +61,17 @@ class _ExploreState extends State<Explore> {
               );
             }
           } else {
-            return const CircularProgressIndicator();
+            return const SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Loading your feed..."),
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            );
           }
         });
   }

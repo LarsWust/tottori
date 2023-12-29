@@ -10,6 +10,7 @@ import 'package:tottori/classes/tottori_track.dart';
 import 'package:tottori/classes/tottori_track_data.dart';
 import 'package:tottori/classes/tottori_user_data.dart';
 import 'package:tottori/helpers/account_helpers.dart';
+import 'package:tottori/main.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
@@ -138,6 +139,9 @@ class TottoriUser {
   }
 
   Future<TottoriUserData> get data async {
+    if (uuid == user?.uid) {
+      return currentUserData;
+    }
     Map<String, dynamic> userData = await userDoc.get().then((value) {
       if (value.exists && value.data() != null) {
         return (value.data() as Map<String, dynamic>);

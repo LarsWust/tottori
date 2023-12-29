@@ -21,20 +21,37 @@ class _ExpandedProfileState extends State<ExpandedProfile> {
       onTap: () {
         Navigator.pop(context);
       },
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+
+      //try convert to imagefilter https://github.com/flutter/flutter/issues/32804#issuecomment-735009692
+      child: Container(
+        color: const Color.fromARGB(100, 0, 0, 0),
         child: SafeArea(
-            child: Center(
-          child: Hero(
+          child: Center(
+            child: Hero(
+              transitionOnUserGestures: true,
+              flightShuttleBuilder: (flightContext, animation, flightDirection, fromHeroContext, toHeroContext) {
+                return Stack(children: [
+                  Positioned.fill(child: fromHeroContext.widget),
+                  Positioned.fill(child: toHeroContext.widget),
+                ]);
+              },
               tag: widget.tag,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.shortestSide / 1.5,
-                height: MediaQuery.of(context).size.shortestSide / 1.5,
-                child: ProfilePicture.image(
-                  image: widget.image,
+              child: FadeTransition(
+                opacity: ModalRoute.of(context)?.animation ?? const AlwaysStoppedAnimation(1),
+                child: FadeTransition(
+                  opacity: ReverseAnimation(ModalRoute.of(context)?.secondaryAnimation ?? const AlwaysStoppedAnimation(1)),
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.shortestSide / 1.5,
+                    height: MediaQuery.of(context).size.shortestSide / 1.5,
+                    child: ProfilePicture.image(
+                      image: widget.image,
+                    ),
+                  ),
                 ),
-              )),
-        )),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

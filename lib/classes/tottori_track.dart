@@ -48,7 +48,6 @@ class TottoriTrack {
     TottoriTrackData snapshot = await data;
     Directory appDocDir = await getApplicationDocumentsDirectory();
     Directory("${appDocDir.path}/tot-svgs").createSync();
-    File? svg;
     if (File("${appDocDir.path}/tot-svgs/${snapshot.tot}.svg").existsSync()) {
       await File("${appDocDir.path}/tot-svgs/${snapshot.tot}.svg").delete();
     }

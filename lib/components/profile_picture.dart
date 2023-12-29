@@ -30,30 +30,43 @@ class _ProfilePictureState extends State<ProfilePicture> {
   @override
   Widget build(BuildContext context) {
     if (widget.expanable) {
-      return Hero(
-        tag: widget.heroTag ?? hashCode,
-        child: GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                transitionDuration: const Duration(milliseconds: 500),
-                reverseTransitionDuration: const Duration(milliseconds: 500),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                opaque: false,
-                pageBuilder: (context, _, __) => ExpandedProfile(
-                  image: widget.image,
-                  tag: widget.heroTag ?? hashCode,
-                ),
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 500),
+              reverseTransitionDuration: const Duration(milliseconds: 500),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              opaque: false,
+              pageBuilder: (context, _, __) => ExpandedProfile(
+                image: widget.image,
+                tag: widget.heroTag ?? hashCode,
               ),
-            );
+            ),
+          );
+        },
+        child: Hero(
+          transitionOnUserGestures: true,
+          flightShuttleBuilder: (flightContext, animation, flightDirection, fromHeroContext, toHeroContext) {
+            return Stack(children: [
+              Positioned.fill(child: fromHeroContext.widget),
+              Positioned.fill(child: toHeroContext.widget),
+            ]);
           },
-          child: widget.circleImage(widget.image.image),
+          tag: widget.heroTag ?? hashCode,
+          child: FadeTransition(
+            opacity: ModalRoute.of(context)?.animation ?? const AlwaysStoppedAnimation(1),
+            child: FadeTransition(
+              opacity: ReverseAnimation(ModalRoute.of(context)?.secondaryAnimation ?? const AlwaysStoppedAnimation(1)),
+              child: widget.circleImage(widget.image.image),
+            ),
+          ),
         ),
       );
     } else {
