@@ -2,21 +2,18 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tottori/classes/tottori_queue.dart';
 import 'package:tottori/classes/tottori_track_data.dart';
 import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/helpers/account_helpers.dart';
 import 'package:uuid/uuid.dart';
-import '../components/expanded_svg.dart';
 
 class TottoriTrack {
   final String uuid;
   late final DocumentReference<Map<String, dynamic>> trackDoc = FirebaseFirestore.instance.collection("tracks").doc(uuid);
-
   final Map<String, dynamic> trackDefaultData = {
+    "uid": "",
     "likes": [].cast<TottoriUser>(),
     "title": "Tottori Track",
     "caption": "",
@@ -30,6 +27,7 @@ class TottoriTrack {
   };
 
   static final TottoriTrackData defaultData = TottoriTrackData(
+    uid: "",
     title: "Tottori Track",
     caption: "...",
     owner: TottoriUser(""),
@@ -57,9 +55,13 @@ class TottoriTrack {
       },
       SetOptions(merge: true),
     );
+    for (var user in snapshot.likes) {
+      removeLike(user);
+    }
     // await FirebaseFirestore.instance.collection("users").where("likedTracks", arrayContains: uuid).get().then((value) {
     //   //TODO: I really hope this scales well :)
     //   //Actually im just gonna comment this out for now casue I dont think its needed
+    //   //TODO: why is this not needed??
     //   for (var element in value.docs) {
     //     FirebaseFirestore.instance.collection("users").doc(element.id).set({
     //       "likedTracks": FieldValue.arrayRemove([uuid])
@@ -67,52 +69,6 @@ class TottoriTrack {
     //   }
     // });
     await trackDoc.delete();
-  }
-
-  static Widget trackSvg(BuildContext context, {bool expandable = false, Color? color, File? svg, int? heroTag}) {
-    SvgPicture svgPic = svg != null
-        ? SvgPicture.file(
-            svg,
-            colorFilter: ColorFilter.mode(
-              color ?? Theme.of(context).colorScheme.onBackground,
-              BlendMode.srcIn,
-            ),
-          )
-        : SvgPicture.asset(
-            "lib/assets/default_track.svg",
-            colorFilter: ColorFilter.mode(
-              color ?? Theme.of(context).colorScheme.onBackground,
-              BlendMode.srcIn,
-            ),
-          );
-    return expandable
-        ? Hero(
-            tag: heroTag ?? svg.hashCode,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    opaque: false,
-                    transitionDuration: const Duration(milliseconds: 500),
-                    reverseTransitionDuration: const Duration(milliseconds: 500),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    pageBuilder: (context, _, __) => ExpandedSvg(
-                      svg: svgPic,
-                      tag: heroTag ?? svg.hashCode,
-                    ),
-                  ),
-                );
-              },
-              child: svgPic,
-            ),
-          )
-        : svgPic;
   }
 
   Future<void> updateData({String title = "", String caption = "", List<File>? images}) async {
@@ -164,6 +120,7 @@ class TottoriTrack {
       }
     }
     return TottoriTrackData(
+      uid: uuid,
       title: trackData["title"] ?? "Tottori Track",
       distance: trackData["distance"] ?? 0,
       caption: trackData["caption"] ?? "",
@@ -203,6 +160,7 @@ class TottoriTrack {
       }
 
       return TottoriTrackData(
+        uid: uuid,
         title: trackData["title"] ?? "Tottori Track",
         distance: trackData["distance"] ?? 0,
         caption: trackData["caption"] ?? "",

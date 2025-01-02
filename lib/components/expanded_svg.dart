@@ -23,16 +23,21 @@ class _ExpandedSvgState extends State<ExpandedSvg> {
       },
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: SafeArea(
+        child: Container(
+          color: Theme.of(context).colorScheme.background.withAlpha(160),
+          child: SafeArea(
             child: Center(
-          child: Hero(
-              tag: widget.tag,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.shortestSide / 1.5,
-                height: MediaQuery.of(context).size.shortestSide / 1.5,
-                child: widget.svg,
-              )),
-        )),
+              child: Hero(
+                tag: widget.tag,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.shortestSide / 1.5,
+                  height: MediaQuery.of(context).size.shortestSide / 1.5,
+                  child: widget.svg,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

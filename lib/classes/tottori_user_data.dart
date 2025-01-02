@@ -28,4 +28,8 @@ class TottoriUserData {
     required this.followers,
     required this.following,
   });
+
+  List<TottoriTrack> get library {
+    return likedTracks..addAll(ownedTracks);
+  }
 }

@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:tottori/classes/tottori_queue.dart';
-import 'package:tottori/classes/tottori_track.dart';
 import 'package:tottori/classes/tottori_track_data.dart';
 import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/components/profile_picture.dart';
+import 'package:tottori/components/track_svg.dart';
 
 class TottoriQueueData {
   String title;
@@ -163,11 +163,11 @@ class TottoriQueueData {
 
   Widget getCoverImage(BuildContext context, {bool expandable = false, int? heroTag}) {
     if (cover?.path.split(".").last == "svg") {
-      return TottoriTrack.trackSvg(context, svg: cover, expandable: expandable, heroTag: heroTag);
+      return TrackSvg(context, svg: cover, expandable: expandable);
     } else if (cover?.path.split(".").last == "jpg") {
       return ProfilePicture.image(image: Image.file(cover!), expanable: expandable, heroTag: heroTag);
     } else {
-      return TottoriTrack.trackSvg(context);
+      return TrackSvg(context);
     }
   }
 }

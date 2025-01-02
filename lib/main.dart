@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:tottori/classes/tottori_queue_data.dart';
+import 'package:tottori/classes/tottori_table.dart';
 import 'package:tottori/classes/tottori_track.dart';
 import 'package:tottori/classes/tottori_track_data.dart';
 import 'classes/tottori_user.dart';
@@ -20,9 +22,10 @@ User? user = FirebaseAuth.instance.currentUser!;
 Stream<TottoriUserData> currentUserDataStream = Stream.value(TottoriUser.defaultData);
 TottoriUserData currentUserData = TottoriUser.defaultData;
 List<TottoriQueueData> currentUserOwnedQueues = List.empty();
-ValueNotifier<MapEntry<TottoriUserData, Map<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>>>?> currentFeedListenable = ValueNotifier(null);
-
+List<TottoriTrackData> currentUserOwnedTracks = List.empty();
 final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+final flutterReactiveBle = FlutterReactiveBle();
+final TottoriTable currentTable = TottoriTable();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +79,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xfffaa700),
+                primary: const Color(0xfffaa700),
                 secondary: const Color.fromARGB(255, 109, 109, 226),
                 brightness: Brightness.dark,
                 background: const Color.fromARGB(255, 32, 32, 48),
@@ -111,6 +115,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xfffaa700),
+                primary: const Color(0xfffaa700),
                 secondary: const Color.fromARGB(255, 91, 91, 215),
                 brightness: Brightness.light,
                 background: const Color.fromARGB(255, 221, 221, 221),

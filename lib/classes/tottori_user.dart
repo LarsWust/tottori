@@ -58,61 +58,12 @@ class TottoriUser {
     await track.removeLike(this);
   }
 
-  Future<MapEntry<TottoriUserData, Map<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>>>> trackFeed(int start, int end) async {
-    TottoriUserData snapshot = await data;
-    Map<MapEntry<TottoriUser, TottoriUserData>, Map<TottoriTrack, TottoriTrackData?>> discoveredTracks = {};
-    Map<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>> tracks = {};
-
-    for (TottoriUser user in snapshot.following) {
-      TottoriUserData userData = await user.data;
-      if (userData.ownedTracks.isNotEmpty) {
-        discoveredTracks.addAll({
-          MapEntry(user, userData): {for (var element in userData.ownedTracks) element: null}
-        });
-      }
-    }
-
-    //go through every following to get latest track
-    //take latest, find next latest from user, repeat
-
-    int timeout = end + 10;
-    while (tracks.length < end && timeout > 0) {
-      timeout--;
-
-      if (discoveredTracks.isEmpty) {
-        break;
-      }
-      Timestamp latestTimestamp = Timestamp.fromMillisecondsSinceEpoch(0);
-
-      MapEntry<MapEntry<TottoriUser, TottoriUserData>, MapEntry<TottoriTrack, TottoriTrackData>>? lastTrackEntry;
-      for (MapEntry<MapEntry<TottoriUser, TottoriUserData>, Map<TottoriTrack, TottoriTrackData?>> discoveredTrackEntry in discoveredTracks.entries) {
-        Map<TottoriTrack, TottoriTrackData?> trackEntries = discoveredTrackEntry.value;
-        if (trackEntries.isNotEmpty) {
-          MapEntry<TottoriTrack, TottoriTrackData?> trackEntry = trackEntries.entries.last;
-          if (trackEntry.value == null) {
-            TottoriTrackData trackData = await trackEntry.key.data;
-            discoveredTracks[discoveredTrackEntry.key]![trackEntry.key] = trackData;
-            trackEntry = MapEntry(trackEntry.key, trackData);
-          }
-          if (trackEntry.value != null && trackEntry.value!.created.millisecondsSinceEpoch > latestTimestamp.millisecondsSinceEpoch) {
-            latestTimestamp = trackEntry.value!.created;
-            lastTrackEntry = MapEntry(MapEntry(discoveredTrackEntry.key.key, discoveredTrackEntry.key.value), MapEntry(trackEntry.key, trackEntry.value!));
-          }
-        } else {
-          discoveredTracks.removeWhere((key, value) => (value.isEmpty));
-        }
-      }
-      if (lastTrackEntry != null) {
-        tracks.addEntries([lastTrackEntry]);
-        discoveredTracks.forEach((key, value) {
-          if (key.key.uuid == lastTrackEntry!.key.key.uuid) {
-            value.remove(lastTrackEntry.value.key);
-          }
-        });
-      }
-      discoveredTracks.removeWhere((key, value) => (value.isEmpty));
-    }
-    return MapEntry(snapshot, tracks);
+  Future<List<TottoriTrackData>> trackFeed(Duration range) async {
+    return await FirebaseFirestore.instance.collection('tracks').where('created', isGreaterThanOrEqualTo: DateTime.now().subtract(range)).limit(100).get().then((QuerySnapshot querySnapshot) async {
+      return Future.wait(querySnapshot.docs.map((doc) async {
+        return TottoriTrack(doc.id).data;
+      })).then((value) => value..sort((a, b) => b.likes.length - a.likes.length)); // Sorting logic
+    });
   }
 
   Stream<TottoriUserData> get dataStream {

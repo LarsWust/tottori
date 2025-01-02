@@ -15,6 +15,7 @@ import 'package:tottori/classes/tottori_track_data.dart';
 import 'package:tottori/classes/tottori_user.dart';
 import 'package:tottori/main.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -35,227 +36,35 @@ class _UploadPageState extends State<UploadPage> {
         child: ValueListenableBuilder(
             valueListenable: uploadTracks,
             builder: (context, value, child) {
-              bool enabled = true;
-              int c = 0;
-              for (String? note in uploadTracks.value.values) {
-                if (note == "Uploading") {
-                  enabled = false;
-                }
-                if (note != null) {
-                  c++;
-                }
-              }
-              if (c == uploadTracks.value.length) {
-                enabled = false;
-              }
-
+              bool enabled = !uploadTracks.value.values.any((note) => note == "Uploading");
               return Column(children: [
-                TextButton.icon(
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      allowMultiple: true,
-                      type: FileType.custom,
-                      allowedExtensions: ['gcode', 'svg', 'gcode.txt', 'tot'],
-                    );
-                    if (result != null) {
-                      Directory tempDir = await getTemporaryDirectory();
-                      for (PlatformFile file in result.files) {
-                        if (file.path != null) {
-                          String uuid = const Uuid().v4();
-                          File tempFile = File("${tempDir.path}/$uuid.tot");
-                          File svgFile = File("${tempDir.path}/$uuid.svg");
-                          uploadTracks.value.addAll({
-                            TottoriTrackData(
-                              title: "Loading",
-                              caption: "Loading",
-                              owner: TottoriUser(""),
-                              tot: "",
-                              svg: null,
-                              distance: 0,
-                              created: Timestamp.now(),
-                              likes: [],
-                              images: [],
-                              queues: [],
-                            ): "Loading"
-                          });
-                          // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
-                          uploadTracks.notifyListeners();
-                          if (file.path!.endsWith(".gcode.txt") || file.path!.endsWith(".gcode") || (file.path!.contains(".gcode") && file.path!.endsWith(".txt"))) {
-                            bool? rectangularMachine;
-                            double? minX;
-                            double? maxX;
-                            double? minY;
-                            double? maxY;
-                            double? rangeY;
-                            double? rangeX;
-                            double? sX;
-                            double? sY;
-                            double? rX;
-                            double? rY;
-                            double distance = 0;
-                            double? lastX;
-                            double? lastY;
-                            String totText = "";
-                            String svgStart = """<svg version="1.1"
-         width="1" height="1"
-         xmlns="http://www.w3.org/2000/svg">
-         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="black"/>
-        <polyline points=\"""";
-                            String svgEnd = """"
-        style="fill:none;stroke:black;stroke-width:.0025"/>
-          </svg>""";
-                            await File(file.path!).openRead().map(utf8.decode).transform(const LineSplitter()).forEach((line) {
-                              line = line.trim();
-                              // print(line);
-                              if (line.startsWith(";")) {
-                                if (rectangularMachine == null) {
-                                  if (line.contains("Machine type: ")) {
-                                    rectangularMachine = line.contains("Rectangular");
-                                  }
-                                } else if (rectangularMachine == true) {
-                                  if (line.contains("Min X (mm): ")) {
-                                    minX = double.parse(line.split(" ").last.trim());
-                                  } else if (line.contains("Min Y (mm): ")) {
-                                    minY = double.parse(line.split(" ").last.trim());
-                                  } else if (line.contains("Max X (mm): ")) {
-                                    maxX = double.parse(line.split(" ").last.trim());
-                                  } else if (line.contains("Max Y (mm): ")) {
-                                    maxY = double.parse(line.split(" ").last.trim());
-                                  } else if (minX != null && minY != null && maxX != null && maxY != null) {
-                                    rangeX = maxX! - minX!;
-                                    rangeY = maxY! - minY!;
-                                    double V = atan2(rangeY!, rangeX!);
-                                    sX = ((1 + cos(pi - V)) / 2);
-                                    sY = ((1 + sin(2 * pi - V)) / 2);
-                                    rX = (((1 + cos(V)) / 2) - ((1 + cos(pi - V)) / 2));
-                                    rY = (((1 + sin(V)) / 2) - ((1 + sin(2 * pi - V)) / 2));
-                                  }
-                                } else {
-                                  if (line.contains("Max radius (mm): ")) {
-                                    double radius = 2 * double.parse(line.split(" ").last.trim());
-                                    minX = 0;
-                                    minY = 0;
-                                    maxX = radius;
-                                    maxY = radius;
-                                    rangeX = maxX! - minX!;
-                                    rangeY = maxY! - minY!;
-                                    print("$minX,$minY,$maxX,$maxY");
-                                  }
-                                }
-                              }
-                              if (line.startsWith("G")) {
-                                List<String> parts = line.split(" ");
-                                double? X = double.tryParse(parts[1].replaceAll("X", "").replaceAll(" ", ""));
-                                double? Y = double.tryParse(parts[2].replaceAll("Y", "").replaceAll(" ", ""));
-
-                                if (X != null && Y != null) {
-                                  if (!rectangularMachine!) {
-                                    X = minX! / (maxX!) + (X / (rangeX!));
-                                    Y = -1 * (minY! / (maxY!) + (Y / (rangeY!))) + 1;
-                                    lastX ??= X;
-                                    lastY ??= Y;
-                                    distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
-                                    lastX = X;
-                                    lastY = Y;
-                                    totText += ("M$X $Y\n");
-                                    svgStart += "$X $Y,";
-                                  } else {
-                                    X = sX! + (X - minX!) / rangeX! * rX!;
-                                    Y = -1 * (sY! + (Y - minY!) / rangeY! * rY!) + 1;
-                                    lastX ??= X;
-                                    lastY ??= Y;
-                                    distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
-                                    lastX = X;
-                                    lastY = Y;
-                                    totText += ("M$X $Y\n");
-                                    svgStart += "$X $Y,";
-                                  }
-                                }
-                              }
-                            });
-                            svgStart = svgStart.substring(0, svgStart.length - 1) + svgEnd;
-                            //print(svgStart);
-                            svgFile.writeAsStringSync(svgStart.trim());
-                            tempFile.writeAsStringSync(totText.trim());
-                            TottoriTrackData trackData = TottoriTrackData(
-                              distance: distance,
-                              title: file.name.split(".").first,
-                              caption: "",
-                              owner: TottoriUser(user!.uid),
-                              tot: uuid,
-                              svg: svgFile,
-                              created: Timestamp.now(),
-                              likes: [],
-                              images: [],
-                              queues: [],
-                            );
-                            uploadTracks.value.removeWhere(
-                              (key, value) => key.title == "Loading" && key.owner.uuid == "",
-                            );
-                            uploadTracks.value = uploadTracks.value..addAll({trackData: null});
-                            // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
-                            uploadTracks.notifyListeners();
-                            // await FirebaseStorage.instance.ref().child("tots/$uuid.tot").putFile(tempFile);
-                          } else if (file.path!.endsWith(".tot")) {
-                            String svgStart = """<svg version="1.1"
-         width="1" height="1"
-         xmlns="http://www.w3.org/2000/svg">
-         <circle cx=".5" cy=".5" r=".4975" stroke-width=".005" fill="none" stroke="black"/>
-        <polyline points=\"""";
-                            String svgEnd = """"
-        style="fill:none;stroke:black;stroke-width:.0025"/>
-          </svg>""";
-                            double distance = 0;
-                            double? lastX;
-                            double? lastY;
-                            await File(file.path!).openRead().map(utf8.decode).transform(const LineSplitter()).forEach((line) {
-                              line = line.trim();
-                              if (line.startsWith("M")) {
-                                List<String> parts = line.split(" ");
-                                double? X = double.tryParse(parts[0].replaceAll("M", "").replaceAll(" ", ""));
-                                double? Y = double.tryParse(parts[1].replaceAll(" ", ""));
-                                if (X != null && Y != null) {
-                                  svgStart += "$X $Y,";
-                                  lastX ??= X;
-                                  lastY ??= Y;
-
-                                  distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
-                                  lastX = X;
-                                  lastY = Y;
-                                }
-                              }
-                            });
-                            svgStart = svgStart.substring(0, svgStart.length - 1) + svgEnd;
-                            //print(svgStart);
-                            tempFile.writeAsStringSync(await File(file.path!).readAsString());
-
-                            svgFile.writeAsStringSync(svgStart.trim());
-
-                            TottoriTrackData trackData = TottoriTrackData(
-                              title: file.name.split(".").first,
-                              caption: "",
-                              owner: TottoriUser(user!.uid),
-                              tot: uuid,
-                              svg: svgFile,
-                              created: Timestamp.now(),
-                              likes: [],
-                              images: [],
-                              distance: distance,
-                              queues: [],
-                            );
-                            uploadTracks.value.removeWhere(
-                              (key, value) => key.title == "Loading" && key.owner.uuid == "",
-                            );
-                            uploadTracks.value = uploadTracks.value..addAll({trackData: null});
-                            // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
-                            uploadTracks.notifyListeners();
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () async {
+                        await launchUrl(Uri.parse('https://sandify.org'));
+                      },
+                      icon: Icon(Icons.open_in_new),
+                      label: Text("Sandify"),
+                    ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        FilePickerResult? result = await FilePicker.platform.pickFiles(
+                          allowMultiple: true,
+                          type: FileType.custom,
+                          allowedExtensions: ['gcode', 'svg', 'gcode.txt', 'tot'],
+                        );
+                        if (result != null) {
+                          for (PlatformFile file in result.files) {
+                            await fileToTot(file);
                           }
                         }
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text("Select Tracks"),
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text("Select Tracks"),
+                    ),
+                  ],
                 ),
                 Expanded(
                   child: Builder(builder: (context) {
@@ -534,6 +343,198 @@ class _UploadPageState extends State<UploadPage> {
             }),
       ),
     );
+  }
+
+  Future<void> fileToTot(PlatformFile file) async {
+    Directory tempDir = await getTemporaryDirectory();
+    try {
+      if (file.path != null) {
+        String uuid = const Uuid().v4();
+        File tempFile = File("${tempDir.path}/$uuid.tot");
+        File svgFile = File("${tempDir.path}/$uuid.svg");
+        uploadTracks.value.addAll({
+          TottoriTrackData(
+            uid: "",
+            title: "Loading",
+            caption: "Loading",
+            owner: TottoriUser(""),
+            tot: "",
+            svg: null,
+            distance: 0,
+            created: Timestamp.now(),
+            likes: [],
+            images: [],
+            queues: [],
+          ): "Loading"
+        });
+        // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+        uploadTracks.notifyListeners();
+        if (file.path!.endsWith(".gcode.txt") || file.path!.endsWith(".gcode") || (file.path!.contains(".gcode") && file.path!.endsWith(".txt"))) {
+          bool? rectangularMachine;
+          double? minX;
+          double? maxX;
+          double? minY;
+          double? maxY;
+          double? rangeY;
+          double? rangeX;
+          double? sX;
+          double? sY;
+          double? rX;
+          double? rY;
+          double distance = 0;
+          double? lastX;
+          double? lastY;
+          String totText = "";
+          String svgStart = """<svg version="1.1"
+     width="1" height="1"
+     xmlns="http://www.w3.org/2000/svg">
+    <polyline points=\"""";
+          String svgEnd = """"
+    style="fill:none;stroke:black;stroke-width:.0025"/>
+      </svg>""";
+          await File(file.path!).openRead().map(utf8.decode).transform(const LineSplitter()).forEach((line) {
+            line = line.trim();
+            if (line.startsWith(";")) {
+              if (rectangularMachine == null) {
+                if (line.contains("Machine type: ")) {
+                  rectangularMachine = line.contains("Rectangular");
+                }
+              } else if (rectangularMachine == true) {
+                if (line.contains("Min X (mm): ")) {
+                  minX = double.parse(line.split(" ").last.trim());
+                } else if (line.contains("Min Y (mm): ")) {
+                  minY = double.parse(line.split(" ").last.trim());
+                } else if (line.contains("Max X (mm): ")) {
+                  maxX = double.parse(line.split(" ").last.trim());
+                } else if (line.contains("Max Y (mm): ")) {
+                  maxY = double.parse(line.split(" ").last.trim());
+                } else if (minX != null && minY != null && maxX != null && maxY != null) {
+                  rangeX = maxX! - minX!;
+                  rangeY = maxY! - minY!;
+                  double V = atan2(rangeY!, rangeX!);
+                  sX = ((1 + cos(pi - V)) / 2);
+                  sY = ((1 + sin(2 * pi - V)) / 2);
+                  rX = (((1 + cos(V)) / 2) - ((1 + cos(pi - V)) / 2));
+                  rY = (((1 + sin(V)) / 2) - ((1 + sin(2 * pi - V)) / 2));
+                }
+              } else {
+                if (line.contains("Max radius (mm): ")) {
+                  double radius = 2 * double.parse(line.split(" ").last.trim());
+                  minX = 0;
+                  minY = 0;
+                  maxX = radius;
+                  maxY = radius;
+                  rangeX = maxX! - minX!;
+                  rangeY = maxY! - minY!;
+                }
+              }
+            }
+            if (line.startsWith("G")) {
+              List<String> parts = line.split(" ");
+              double? X = double.tryParse(parts[1].replaceAll("X", "").replaceAll(" ", ""));
+              double? Y = double.tryParse(parts[2].replaceAll("Y", "").replaceAll(" ", ""));
+              if (X != null && Y != null) {
+                if (!rectangularMachine!) {
+                  X = minX! / (maxX!) + (X / (rangeX!));
+                  Y = -1 * (minY! / (maxY!) + (Y / (rangeY!))) + 1;
+                  lastX ??= X;
+                  lastY ??= Y;
+                  distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
+                  lastX = X;
+                  lastY = Y;
+                  totText += ("M$X $Y\n");
+                  svgStart += "$X $Y,";
+                } else {
+                  X = sX! + (X - minX!) / rangeX! * rX!;
+                  Y = -1 * (sY! + (Y - minY!) / rangeY! * rY!) + 1;
+                  lastX ??= X;
+                  lastY ??= Y;
+                  distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
+                  lastX = X;
+                  lastY = Y;
+                  totText += ("M$X $Y\n");
+                  svgStart += "$X $Y,";
+                }
+              }
+            }
+          });
+          svgStart = svgStart.substring(0, svgStart.length - 1) + svgEnd;
+          //print(svgStart);
+          svgFile.writeAsStringSync(svgStart.trim());
+          tempFile.writeAsStringSync(totText.trim());
+          TottoriTrackData trackData = TottoriTrackData(
+            uid: "",
+            distance: distance,
+            title: file.name.split(".").first,
+            caption: "",
+            owner: TottoriUser(user!.uid),
+            tot: uuid,
+            svg: svgFile,
+            created: Timestamp.now(),
+            likes: [],
+            images: [],
+            queues: [],
+          );
+          uploadTracks.value.removeWhere(
+            (key, value) => key.title == "Loading" && key.owner.uuid == "",
+          );
+          uploadTracks.value = uploadTracks.value..addAll({trackData: null});
+          // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+          uploadTracks.notifyListeners();
+          // await FirebaseStorage.instance.ref().child("tots/$uuid.tot").putFile(tempFile);
+        } else if (file.path!.endsWith(".tot")) {
+          String svgStart = """<svg version="1.1"
+     width="1" height="1"
+     xmlns="http://www.w3.org/2000/svg">
+    <polyline points=\"""";
+          String svgEnd = """"
+    style="fill:none;stroke:black;stroke-width:.0025"/>
+      </svg>""";
+          double distance = 0;
+          double? lastX;
+          double? lastY;
+          await File(file.path!).openRead().map(utf8.decode).transform(const LineSplitter()).forEach((line) {
+            line = line.trim();
+            if (line.startsWith("M")) {
+              List<String> parts = line.split(" ");
+              double? X = double.tryParse(parts[0].replaceAll("M", "").replaceAll(" ", ""));
+              double? Y = double.tryParse(parts[1].replaceAll(" ", ""));
+              if (X != null && Y != null) {
+                svgStart += "$X $Y,";
+                lastX ??= X;
+                lastY ??= Y;
+
+                distance += sqrt(pow((X - lastX!), 2) + pow((Y - lastY!), 2));
+                lastX = X;
+                lastY = Y;
+              }
+            }
+          });
+          svgStart = svgStart.substring(0, svgStart.length - 1) + svgEnd;
+          tempFile.writeAsStringSync(await File(file.path!).readAsString());
+          svgFile.writeAsStringSync(svgStart.trim());
+          TottoriTrackData trackData = TottoriTrackData(
+            uid: "",
+            title: file.name.split(".").first,
+            caption: "",
+            owner: TottoriUser(user!.uid),
+            tot: uuid,
+            svg: svgFile,
+            created: Timestamp.now(),
+            likes: [],
+            images: [],
+            distance: distance,
+            queues: [],
+          );
+          uploadTracks.value.removeWhere(
+            (key, value) => key.title == "Loading" && key.owner.uuid == "",
+          );
+          uploadTracks.value = uploadTracks.value..addAll({trackData: null});
+          // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+          uploadTracks.notifyListeners();
+        }
+      }
+    } catch (e) {}
   }
 }
 

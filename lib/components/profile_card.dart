@@ -10,7 +10,7 @@ import 'package:tottori/components/box_button.dart';
 import 'package:tottori/components/box_button_type.dart';
 import 'package:tottori/components/keep_alive_page.dart';
 import 'package:tottori/components/profile_picture.dart';
-import 'package:tottori/components/selectors.dart';
+import 'package:tottori/components/selectors/selectors.dart';
 import 'package:tottori/components/user_list.dart';
 import 'package:tottori/helpers/navigation_helpers.dart';
 import 'package:tottori/main.dart';
@@ -67,8 +67,8 @@ class _ProfileCardState extends State<ProfileCard> {
                       Row(
                         children: [
                           SizedBox(
-                            width: 150,
-                            height: 150,
+                            width: 75,
+                            height: 75,
                             child: ProfilePicture.image(
                               image: snapshot.data!.pfp,
                               expanable: true,
@@ -79,13 +79,35 @@ class _ProfileCardState extends State<ProfileCard> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  snapshot.data!.displayName,
-                                  style: Theme.of(context).textTheme.headlineSmall!,
-                                ),
-                                Text(
-                                  "@${snapshot.data!.username}",
-                                  style: Theme.of(context).textTheme.bodyMedium!,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            snapshot.data!.displayName,
+                                            style: Theme.of(context).textTheme.titleMedium!,
+                                          ),
+                                          Text(
+                                            "@${snapshot.data!.username}",
+                                            style: Theme.of(context).textTheme.bodySmall!,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                                          builder: (context) => const ProfileSetupPage(),
+                                        ));
+                                      },
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Theme.of(context).colorScheme.outline,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 Divider(
                                   color: Theme.of(context).colorScheme.outline,
@@ -104,7 +126,7 @@ class _ProfileCardState extends State<ProfileCard> {
                                         children: [
                                           Text(
                                             "${snapshot.data!.followers.length}",
-                                            style: Theme.of(context).textTheme.bodyLarge,
+                                            style: Theme.of(context).textTheme.labelLarge,
                                           ),
                                           Text(
                                             "Followers",
@@ -208,22 +230,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         height: 16,
                       ),
                       widget.tottoriUser.uuid == user!.uid
-                          ? Row(
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                                      builder: (context) => const ProfileSetupPage(),
-                                    ));
-                                  },
-                                  label: const Text("Edit Profile"),
-                                  icon: const Icon(Icons.edit),
-                                  style: ButtonStyle(
-                                    backgroundColor: MaterialStateProperty.all<Color>(Theme.of(context).colorScheme.background),
-                                  ),
-                                ),
-                              ],
-                            )
+                          ? const SizedBox.shrink()
                           : Row(
                               children: [
                                 ElevatedButton.icon(

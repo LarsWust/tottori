@@ -11,7 +11,7 @@ import 'package:tottori/classes/tottori_user_data.dart';
 import 'package:tottori/components/box_button.dart';
 import 'package:tottori/components/box_button_type.dart';
 import 'package:tottori/components/profile_picture.dart';
-import 'package:tottori/components/selectors.dart';
+import 'package:tottori/components/selectors/selectors.dart';
 import 'package:tottori/helpers/time_format.dart';
 import 'package:tottori/main.dart';
 import 'package:tottori/pages/profile.dart';

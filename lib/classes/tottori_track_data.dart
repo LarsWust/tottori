@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tottori/classes/tottori_queue.dart';
-import 'package:tottori/classes/tottori_track.dart';
 import 'package:tottori/classes/tottori_user.dart';
+import 'package:tottori/components/track_svg.dart';
 
 class TottoriTrackData {
+  String uid;
   String title;
   String caption;
   final TottoriUser owner;
@@ -23,6 +24,7 @@ class TottoriTrackData {
   List<TottoriQueue> queues;
 
   TottoriTrackData({
+    required this.uid,
     required this.title,
     required this.caption,
     required this.owner,
@@ -47,7 +49,7 @@ class TottoriTrackData {
   }
 
   Widget svgPicture(BuildContext context, {bool expandable = false, Color? color}) {
-    return TottoriTrack.trackSvg(
+    return TrackSvg(
       context,
       expandable: expandable,
       color: color,
